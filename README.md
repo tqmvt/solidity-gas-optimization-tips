@@ -1,6 +1,8 @@
 # Solidity Gas Optimization Tips
-Solidity Gas Optimization Tips taken from various sources (listed in the #credits section below). Make pull requests to contribute gas alpha. 
 
+Solidity Gas Optimization Tips taken from various sources (listed in the #credits section below). Make pull requests to contribute gas alpha.
+
+[Twitter](https://twitter.com/_scentforest)
 
 # Gas Optimizations in Solidity
 
@@ -10,8 +12,7 @@ Check if arithmethic operations can be achieved using bitwise operators, if yes,
 
 **Note:** Bit shift `<<` and `>>` operators are not among the arithmetic ones, and thus don’t revert on overflow.
 
-**Code example:** 
-
+**Code example:**
 
 ```diff
 -    uint256 alpha = someVar / 256;
@@ -21,10 +22,10 @@ Check if arithmethic operations can be achieved using bitwise operators, if yes,
 
 
 -    uint 256 alpha = delta / 2;
--    uint 256 beta = delta / 4; 
+-    uint 256 beta = delta / 4;
 -    uint 256 gamma = delta * 8;
 +    uint 256 alpha = delta >> 1;
-+    uint 256 beta = delta >> 2; 
++    uint 256 beta = delta >> 2;
 +    uint 256 gamma = delta << 3;
 
 ```
@@ -41,9 +42,9 @@ Because `public` grants more access than `external` (and is costlier than the la
 pragma solidity 0.8.10;
 
 contract Test {
- 
+
     string message = "Hello World";
-    
+
     // Execution cost: 24527
     function test() public view returns (string memory){
          return message;
@@ -60,20 +61,16 @@ contract Test {
 
 If the variable is not set/initialized, it is assumed to have a default value (0, false, 0x0, etc., depending on the data type). If you explicitly initialize it with its default value, you are just wasting gas.
 
-
 ```solidity
 uint256 foo = 0;//bad, expensive
 uint256 bar;//good, cheap
 ```
 
-
 ## 4- Use short strings in revert, require checks
 
 It is considered a best practice to append the error reason string with `require` statement. But these strings take up space in the deployed bytecode. Each reason string needs at least 32 bytes, so make sure your string complies with 32 bytes, otherwise it will become more expensive.
 
-
 **Code Example:**
-
 
 ```solidity
 require(balance >= amount, "Insufficient balance");//good
@@ -81,7 +78,8 @@ require(balance >= amount, "Too bad, it appears, ser you are broke, bye bye"; //
 ```
 
 ## 5- Avoid redundant checks
-We should avoid unnecessary/redundant checks to save some extra gas. 
+
+We should avoid unnecessary/redundant checks to save some extra gas.
 
 **Code Example:**
 
@@ -92,23 +90,16 @@ if (balance>0){ // this check is redundant
     . . . //some action
 }
 
-Good Code: 
+Good Code:
 require(balance>0, "Insufficient balance");
 . . . //some action
 ```
 
-
-
 ## 6- Use nested if and, avoid multiple check combinations
 
-Using nested is cheaper than using && multiple check combinations. There are more advantages, such as easier to read code and better coverage reports. 
-
-
+Using nested is cheaper than using && multiple check combinations. There are more advantages, such as easier to read code and better coverage reports.
 
 **Code Example:**
-
-
-
 
 ```solidity
 pragma solidity 0.8.10;
@@ -116,16 +107,16 @@ pragma solidity 0.8.10;
 contract NestedIfTest {
 
     //Execution cost: 22334 gas
-  function funcBad(uint256 input) public pure returns (string memory) { 
-       if (input<10 && input>0 && input!=6){ 
+  function funcBad(uint256 input) public pure returns (string memory) {
+       if (input<10 && input>0 && input!=6){
            return "If condition passed";
-       } 
+       }
 
    }
 
     //Execution cost: 22294 gas
-    function funcGood(uint256 input) public pure returns (string memory) { 
-    if (input<10) { 
+    function funcGood(uint256 input) public pure returns (string memory) {
+    if (input<10) {
         if (input>0){
             if (input!=6){
                 return "If condition passed";
@@ -137,9 +128,8 @@ contract NestedIfTest {
 ```
 
 ## 7- Use of Multiple require(s)
-Using mutiple require statements is cheaper than using `&&` multiple check combinations. There are more advantages, such as easier to read code and better coverage reports. 
 
-
+Using mutiple require statements is cheaper than using `&&` multiple check combinations. There are more advantages, such as easier to read code and better coverage reports.
 
 ```solidity
 pragma solidity 0.8.10;
@@ -164,6 +154,7 @@ contract MultipleRequire {
 ```
 
 ## 8- Internal functions are cheaper to call
+
 Set approriate function visibillities, as `internal` functions are cheaper to call than `public` functions.There is no need to mark a function as `public` if it is only meant to be called internally.
 
 ```diff
@@ -174,21 +165,19 @@ Set approriate function visibillities, as `internal` functions are cheaper to ca
 
 ## 9- Use libraries to save some bytecode
 
-When you call a `public` function of the library, the bytecode of the function will not become part of your contract, so you can put complex logic in the library while keeping the contract scale small. 
-
+When you call a `public` function of the library, the bytecode of the function will not become part of your contract, so you can put complex logic in the library while keeping the contract scale small.
 
 The call to the library is made through a delegate call, which means that the library can access the same data and the same permissions as the contract. This means that it is not worth doing for simple tasks.
 
 ## 10- Replace state variable reads and writes within loops with local variable reads and writes.
 
-
 Reading and writing local variables is cheap, whereas reading and writing state variables that are stored in contract storage is expensive.
 
 ```solidity
-function badCode() external {                
+function badCode() external {
   for(uint256 i; i < myArray.length; i++) { // state reads
     myCounter++; // state reads and writes
-  }        
+  }
 }
 
 
@@ -196,17 +185,15 @@ function goodCode() external {
     uint256 length = myArray.length; // one state read
     uint256 local_mycounter = myCounter; // one state read
     for(uint256 i; i < length; i++) { // local reads
-        local_mycounter++; // local reads and writes  
+        local_mycounter++; // local reads and writes
     }
     myCounter = local_mycounter; // one state write
 }
 ```
 
-
 ## 11- Packing Structs
 
 A common gas optimization is “packing structs” or “packing storage slots”. This is the action of using smaller types like uint128 and uint96 next to each other in contract storage. When values are read or written in contract storage a full 256 bits are read or written. So if you can pack multiple variables within one 256 bit storage slot then you are cutting the cost to read or write those storage variables in half or more.
-
 
 ```solidity
 // Unoptimized
@@ -225,21 +212,23 @@ struct MyStruct {
 In the above a `myTime` and `myAddress` state variables take up `256` bits so both values can be read or written in a single state read or write.
 
 ## 12- Solidity Gas Optimizer
+
 Make sure Solidity’s optimizer is enabled. It reduces gas costs. If you want to gas optimize for contract deployment (costs less to deploy a contract) then set the Solidity optimizer at a low number. If you want to optimize for run-time gas costs (when functions are called on a contract) then set the optimizer to a high number.
 
 ## 13- Save on data types
-It is better to use `uint256` and `bytes32` than using uint8 for example. While it seems like `uint8` will consume less gas than uint256 it is not true, since the Ethereum virtual Machine(EVM) will still occupy `256` bits, fill 8 bits with the uint variable and fill the extra bites with zeros. 
 
+It is better to use `uint256` and `bytes32` than using uint8 for example. While it seems like `uint8` will consume less gas than uint256 it is not true, since the Ethereum virtual Machine(EVM) will still occupy `256` bits, fill 8 bits with the uint variable and fill the extra bites with zeros.
 
 **Code Example:**
+
 ```solidity
 pragma solidity ^0.8.1;
 
 contract SaveGas {
-    
+
     uint8 resulta = 0;
     uint resultb = 0;
-    
+
     // Execution cost: 73446 gas
     function UseUint() external returns (uint) {
         uint selectedRange = 50;
@@ -248,8 +237,8 @@ contract SaveGas {
         }
         return resultb;
     }
-    
-    // Execution cost: 84175 gas 
+
+    // Execution cost: 84175 gas
     function UseUInt8() external returns (uint8){
         uint8 selectedRange = 50;
         for (uint8 i=0; i < selectedRange; i++) {
@@ -261,8 +250,8 @@ contract SaveGas {
 ```
 
 ## 14- Short circuiting
-Short-circuiting is a strategy we can make use of when an operation makes use of either ``||`` or ``&&``. This pattern works by ordering the lower-cost operation first so that the higher-cost operation may be skipped (short-circuited) if the first operation evaluates to true.
 
+Short-circuiting is a strategy we can make use of when an operation makes use of either `||` or `&&`. This pattern works by ordering the lower-cost operation first so that the higher-cost operation may be skipped (short-circuited) if the first operation evaluates to true.
 
 ```solidity
 // f(x) is low cost
@@ -274,15 +263,14 @@ f(x) && g(y)
 ```
 
 ## 15- Avoiding/Removing unnecessary libraries
+
 Libraries are often only imported for a small number of uses, meaning that they can contain a significant amount of code that is redundant to your contract. If you can safely and effectively implement the functionality imported from a library within your contract, it is optimal to do so.
 
-
 ## 16- Make fewer external calls
+
 External calls are expensive, therefore, fewer external gas == fewer gas cost.
 
-
 ## 17- `unchecked { ++i;}` is cheaper than `i++;` & `i=i+1;`
-
 
 **Code Example:**
 
@@ -303,13 +291,14 @@ for(uint i; i<n;){
 ```
 
 ## 18- Avoid repeated computations
-Arithmetic computations cost gas, it is recommended to avoid repeated computations. 
+
+Arithmetic computations cost gas, it is recommended to avoid repeated computations.
 
 **Code Example:**
 
 ```solidity
 
-// Unoptimized code: 
+// Unoptimized code:
 for (uint i=0;i<length;i++) {
 tokens[i] += limit * price;
 }
@@ -323,8 +312,8 @@ tokens[i] += local;
 ```
 
 ## 19- Avoid dead code
-There is no point of leaving dead lines in code. Those lines are never going to execute, and but they will take place in bytecode, it is better to get rid of em.
 
+There is no point of leaving dead lines in code. Those lines are never going to execute, and but they will take place in bytecode, it is better to get rid of em.
 
 **Code Example:**
 
@@ -340,8 +329,7 @@ function deadCode(uint x) public pure {
 
 ## 20- Delete your variables to get a gas refund.
 
-Since there's no garbage collection, you have to throw away unused data yourself. 
-
+Since there's no garbage collection, you have to throw away unused data yourself.
 
 **Code Example:**
 
@@ -355,8 +343,8 @@ myInt = 0;
 ```
 
 ## 21- Single line swaps
-One line to swap two variables without writing a function or temporary variable that needs more gas.
 
+One line to swap two variables without writing a function or temporary variable that needs more gas.
 
 **Code Example:**
 
@@ -378,7 +366,6 @@ Also, it is important to note that, If not specified data location, then it stor
 
 ## 23- Use `calldata` instead of `memory` for function parameters
 
-
 ```solidity
 contract C {
     function add(uint[] memory arr) external returns (uint sum) {
@@ -391,7 +378,6 @@ contract C {
 ```
 
 In the above example, the dynamic array `arr` has the storage location `memory`. When the function gets called externally, the array values are kept in `calldata` and copied to memory during ABI decoding (using the opcode `calldataload` and `mstore`). And during the for loop, `arr[i]` accesses the value in memory using a `mload`. However, for the above example this is inefficient. Consider the following snippet instead:
-
 
 ```solidity
 contract C {
@@ -408,13 +394,13 @@ contract C {
 
 ```solidity
 
-// Unoptimized code: 
+// Unoptimized code:
 contract C {
     /// The owner is set during contruction time, and never changed afterwards.
     address public owner = msg.sender;
 }
 
-// Optimized code: 
+// Optimized code:
 
 
 contract C {
@@ -440,7 +426,6 @@ You can cut out 10 opcodes in the creation-time EVM bytecode if you declare a co
 
 In Solidity, this chunk of assembly would mean the following:
 
-
 ```solidity
 if(msg.value != 0) revert();
 ```
@@ -451,12 +436,11 @@ Using newer compiler versions and the optimizer gives gas optimizations and addi
 
 ## 27- Use `!= 0` instead of `> 0` for unsigned integer comparison
 
-When dealing with unsigned integer types, comparisons with `!= 0` are cheaper then with ``> 0``.
+When dealing with unsigned integer types, comparisons with `!= 0` are cheaper then with `> 0`.
 
 ## 28- Limit Modifiers
 
 The code of modifiers is inlined inside the modified function, thus adding up size and costing gas. Limit the modifiers. Internal functions are not inlined, but called as separate functions. They are slightly more expensive at run time, but save a lot of redundant bytecode in deployment, if used more than once.
-
 
 ## 29- Packing booleans
 
@@ -470,7 +454,6 @@ Solidity provides only two data types to represents list of data: arrays and map
 
 In order to save gas, it is recommended to use mappings to manage lists of data, unless there is a need to iterate or it is possible to pack data types. This is useful both for Storage and Memory. You can manage an ordered list with a mapping using an integer index as a key.
 
-
 ## 31- Fixed size variables are cheaper than variable size.
 
 Whenever it is possible to set an upper bound on the size of an array, use a fixed size array instead of a dynamic one.
@@ -483,7 +466,7 @@ Custom errors from Solidity 0.8.4 are cheaper than revert strings (cheaper deplo
 
 ```solidity
 
-// Revert Strings 
+// Revert Strings
 contract C {
     address payable owner;
 
